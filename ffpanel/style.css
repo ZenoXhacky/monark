@@ -1,0 +1,196 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #090a0e;
+  color: #f5f5f7;
+  font-family: Arial, sans-serif;
+  padding: 24px 14px;
+}
+
+.panel {
+  width: 100%;
+  max-width: 520px;
+  margin: auto;
+  background: #14151b;
+  border: 1px solid #303039;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.logo {
+  font-size: 27px;
+  font-weight: 900;
+  color: #ff344b;
+}
+
+.logo span {
+  color: white;
+}
+
+header p,
+.hint,
+footer {
+  color: #999ba8;
+  font-size: 12px;
+}
+
+.welcome {
+  margin: 32px 0;
+  padding: 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #35131c, #1a1b24);
+}
+
+.tag {
+  color: #ff6474;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+h1 {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 19px;
+}
+
+.setting {
+  margin: 24px 0;
+}
+
+.setting-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.setting output {
+  color: #ff596b;
+  font-weight: bold;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #ff344b;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+button {
+  flex: 1;
+  min-height: 48px;
+  border: none;
+  border-radius: 9px;
+  background: #ed3047;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #292a34;
+  border: 1px solid #41424d;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+#status {
+  color: #b7bbc7;
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+}
+
+@media (max-width: 380px) {
+  .panel {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 25px;
+  }
+}
+/* Mobile and tablet improvements */
+
+html {
+  min-width: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  padding: 16px 12px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.panel {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  padding: clamp(16px, 5vw, 24px);
+  overflow-wrap: anywhere;
+}
+
+input[type="range"] {
+  min-height: 32px;
+  touch-action: pan-y;
+}
+
+button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 8px;
+  font-size: 13px;
+}
+
+@media (max-width: 400px) {
+  body {
+    padding: 10px 8px;
+  }
+
+  .panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .welcome {
+    padding: 16px;
+    margin: 22px 0;
+  }
+
+  h1 {
+    font-size: 25px;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+}
+.subtitle {
+  color: #b8b8c2;
+  font-size: 14px;
+  margin-top: 6px;
+  margin-bottom: 20px;
+}
