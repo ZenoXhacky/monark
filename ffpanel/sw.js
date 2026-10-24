@@ -1,19 +1,20 @@
 
-const CACHE_NAME = "ff-panel-v1";
+const CACHE_NAME = "hackyx-v2";
 
-const APP_FILES = [
+const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
   "./manifest.json",
-  "./icon.svg"
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_FILES);
+      return cache.addAll(FILES_TO_CACHE);
     })
   );
 
@@ -22,14 +23,14 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys().then((keys) =>
+      Promise.all(
         keys
-          .filter((key) => key.startsWith("ff-panel-")
-            && key !== CACHE_NAME)
+          .filter((key) => key.startsWith("hackyx-") &&
+                           key !== CACHE_NAME)
           .map((key) => caches.delete(key))
-      );
-    })
+      )
+    )
   );
 
   self.clients.claim();
@@ -38,15 +39,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
-
-  if (url.origin !== self.location.origin) return;
-
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request);
+      return cached || fetch(event.request);
     })
   );
 });
