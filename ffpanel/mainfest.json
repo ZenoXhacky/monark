@@ -1,9 +1,8 @@
-
 {
   "id": "./",
-  "name": "HackyX",
+  "name": "HackyX Gaming Panel",
   "short_name": "HackyX",
-  "description": "HackyX Gaming Settings Panel",
+  "description": "Your personal gaming settings companion",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
