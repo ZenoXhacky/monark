@@ -14,17 +14,11 @@ const resetButton = document.getElementById("resetBtn");
 
 function getSavedSettings() {
   try {
-    const saved = JSON.parse(
-      localStorage.getItem("hackyx-settings")
-    );
-
-    if (saved && typeof saved === "object" && saved !== null) {
-      return saved;
-    }
+    const saved = JSON.parse(localStorage.getItem("hackyx-settings"));
+    if (saved && typeof saved === "object" && saved !== null) return saved;
   } catch (error) {
     console.warn("Could not load saved settings.", error);
   }
-
   return {};
 }
 
@@ -38,7 +32,7 @@ function renderSettings() {
 
   container.replaceChildren();
 
-  settings.forEach((setting) => {
+  settings.forEach(setting => {
     const row = document.createElement("div");
     row.className = "setting-row";
 
@@ -89,14 +83,11 @@ function renderSettings() {
 function saveSettings() {
   const values = {};
 
-  settings.forEach((setting) => {
+  settings.forEach(setting => {
     const slider = document.getElementById(
       setting.name.replace(/\s+/g, "-")
     );
-
-    if (slider) {
-      values[setting.name] = Number(slider.value);
-    }
+    if (slider) values[setting.name] = Number(slider.value);
   });
 
   try {
@@ -122,110 +113,99 @@ function resetSettings() {
 
 saveButton?.addEventListener("click", saveSettings);
 resetButton?.addEventListener("click", resetSettings);
-
 renderSettings();
 
-// Offline support for HTTPS or localhost hosting.
+// Register the service worker for optional offline support.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((error) => {
+    navigator.serviceWorker.register("./sw.js").catch(error => {
       console.error("Offline support failed:", error);
     });
   });
 }
 
-// Local C# timer service.
-// This controls a timer only, not Free Fire gameplay.
-const TIMER_API = "http://127.0.0.1:5080";
-
+// Browser-based timer: no C# server required.
 const timerButton = document.getElementById("aimToggleBtn");
 const timerMessage = document.getElementById("aimToggleMessage");
 
 let timerIsRunning = false;
-let timerRequestInProgress = false;
+let timerStartedAt = 0;
+let elapsedBeforeStart = 0;
+let timerInterval = null;
 
-async function hackyXTimerRequest(action) {
-  try {
-    const response = await fetch(`${TIMER_API}/${action}`, {
-      method: "POST"
-    });
+function formatTimerTime(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+  return [hours, minutes, seconds]
+    .map(value => String(value).padStart(2, "0"))
+    .join(":");
+}
 
-    return await response.json();
-  } catch (error) {
-    console.error("Timer connection failed:", error);
+function updateTimerDisplay() {
+  if (!timerMessage) return;
 
-    if (timerMessage) {
-      timerMessage.textContent =
-        "Connection failed. Check the C# service and browser console.";
-    }
+  const elapsedMs = elapsedBeforeStart +
+    (timerIsRunning ? Date.now() - timerStartedAt : 0);
 
-    return null;
-  }
+  const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+  timerMessage.textContent =
+    `${timerIsRunning ? "Background timer is running" : "Background timer is stopped"} — ` +
+    formatTimerTime(elapsedSeconds);
 }
 
 function updateTimerButton() {
   if (timerButton) {
-    timerButton.textContent = timerIsRunning
-      ? "Stop Timer"
-      : "Start Timer";
-
-    timerButton.setAttribute(
-      "aria-pressed",
-      String(timerIsRunning)
-    );
-
+    timerButton.textContent = timerIsRunning ? "Stop Timer" : "Start Timer";
+    timerButton.setAttribute("aria-pressed", String(timerIsRunning));
     timerButton.classList.toggle("active", timerIsRunning);
-    timerButton.disabled = timerRequestInProgress;
   }
 
-  if (timerMessage) {
-    timerMessage.textContent = timerIsRunning
-      ? "Background timer is running."
-      : "Background timer is stopped.";
-  }
+  updateTimerDisplay();
 }
 
-timerButton?.addEventListener("click", async () => {
-  if (timerRequestInProgress) return;
+function startHackyXTimer() {
+  if (timerIsRunning) return;
 
-  timerRequestInProgress = true;
+  timerStartedAt = Date.now();
+  timerIsRunning = true;
+
+  timerInterval = setInterval(updateTimerDisplay, 250);
   updateTimerButton();
+}
 
-  const action = timerIsRunning ? "stop" : "start";
-  const result = await hackyXTimerRequest(action);
+function stopHackyXTimer() {
+  if (!timerIsRunning) return;
 
-  if (result && typeof result.running === "boolean") {
-    timerIsRunning = result.running;
+  elapsedBeforeStart += Date.now() - timerStartedAt;
+  timerIsRunning = false;
+
+  clearInterval(timerInterval);
+  timerInterval = null;
+  updateTimerButton();
+}
+
+timerButton?.addEventListener("click", () => {
+  if (timerIsRunning) {
+    stopHackyXTimer();
+  } else {
+    startHackyXTimer();
   }
-
-  timerRequestInProgress = false;
-  updateTimerButton();
 });
 
-// Keep these functions available for testing from the browser console.
-window.startHackyXTimer = async () => {
-  const result = await hackyXTimerRequest("start");
-  if (result) {
-    timerIsRunning = result.running;
-    updateTimerButton();
-  }
-  return result;
-};
+// Refresh the display when the page becomes visible again.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) updateTimerDisplay();
+});
 
-window.stopHackyXTimer = async () => {
-  const result = await hackyXTimerRequest("stop");
-  if (result) {
-    timerIsRunning = result.running;
-    updateTimerButton();
-  }
-  return result;
-};
+window.startHackyXTimer = startHackyXTimer;
+window.stopHackyXTimer = stopHackyXTimer;
 
+updateTimerButton();
 
+// Panel Lock controls for the local practice simulation.
 const panelLockBtn = document.getElementById("panelLockBtn");
 const panelLockUI = document.getElementById("panelLockUI");
 const aimLockBtn = document.getElementById("aimLockBtn");
@@ -234,29 +214,32 @@ const aimLockMessage = document.getElementById("aimLockMessage");
 
 let aimLockEnabled = false;
 
-panelLockBtn.addEventListener("click", () => {
+panelLockBtn?.addEventListener("click", () => {
+  if (!panelLockUI) return;
   panelLockUI.hidden = false;
   panelLockBtn.setAttribute("aria-expanded", "true");
 });
 
-closeLockBtn.addEventListener("click", () => {
-  panelLockUI.hidden = true;
-  panelLockBtn.setAttribute("aria-expanded", "false");
+closeLockBtn?.addEventListener("click", () => {
+  if (panelLockUI) panelLockUI.hidden = true;
+  panelLockBtn?.setAttribute("aria-expanded", "false");
 });
 
-aimLockBtn.addEventListener("click", () => {
+aimLockBtn?.addEventListener("click", () => {
   aimLockEnabled = !aimLockEnabled;
 
   aimLockBtn.textContent = aimLockEnabled ? "ON" : "OFF";
   aimLockBtn.classList.toggle("is-on", aimLockEnabled);
   aimLockBtn.setAttribute("aria-pressed", String(aimLockEnabled));
 
-  aimLockMessage.textContent = aimLockEnabled
-    ? "Aim Lock is ON."
-    : "Aim Lock is OFF.";
+  if (aimLockMessage) {
+    aimLockMessage.textContent = aimLockEnabled
+      ? "Aim Lock is ON."
+      : "Aim Lock is OFF.";
+  }
 });
 
-
+// Interactive Target Lab practice simulation.
 const aimArena = document.getElementById("aimArena");
 const demoCrosshair = document.getElementById("demoCrosshair");
 const demoStatus = document.getElementById("demoStatus");
@@ -268,26 +251,28 @@ let demoLocked = false;
 let demoSelections = 0;
 
 function getDemoTargets() {
-  return [...aimArena.querySelectorAll(".demo-target")];
+  return aimArena
+    ? [...aimArena.querySelectorAll(".demo-target")]
+    : [];
 }
 
 function moveDemoCrosshair(x, y) {
   demoX = Math.max(3, Math.min(97, x));
   demoY = Math.max(5, Math.min(95, y));
 
-  demoCrosshair.style.left = `${demoX}%`;
-  demoCrosshair.style.top = `${demoY}%`;
+  if (demoCrosshair) {
+    demoCrosshair.style.left = `${demoX}%`;
+    demoCrosshair.style.top = `${demoY}%`;
+  }
 }
 
 function nearestDemoTarget() {
   const targets = getDemoTargets();
-
   if (!targets.length) return null;
 
   return targets.reduce((nearest, target) => {
     const x = parseFloat(target.style.left);
     const y = parseFloat(target.style.top);
-
     const distance = Math.hypot(x - demoX, y - demoY);
 
     return !nearest || distance < nearest.distance
@@ -297,23 +282,22 @@ function nearestDemoTarget() {
 }
 
 function updateDemoLock() {
-  demoLocked = aimLockBtn.getAttribute("aria-pressed") === "true";
+  demoLocked = aimLockBtn?.getAttribute("aria-pressed") === "true";
 
-  demoStatus.textContent = demoLocked ? "LOCK ON" : "FREE AIM";
-  demoStatus.classList.toggle("locked", demoLocked);
+  if (demoStatus) {
+    demoStatus.textContent = demoLocked ? "LOCK ON" : "FREE AIM";
+    demoStatus.classList.toggle("locked", demoLocked);
+  }
 
   if (demoLocked) {
     const nearest = nearestDemoTarget();
-
-    if (nearest) {
-      moveDemoCrosshair(nearest.x, nearest.y);
-    }
+    if (nearest) moveDemoCrosshair(nearest.x, nearest.y);
   }
 }
 
-aimLockBtn.addEventListener("click", updateDemoLock);
+aimLockBtn?.addEventListener("click", updateDemoLock);
 
-aimArena.addEventListener("pointermove", event => {
+aimArena?.addEventListener("pointermove", event => {
   if (demoLocked) return;
 
   const rect = aimArena.getBoundingClientRect();
@@ -324,17 +308,14 @@ aimArena.addEventListener("pointermove", event => {
   );
 });
 
-aimArena.addEventListener("click", event => {
+aimArena?.addEventListener("click", event => {
   if (event.target.closest(".demo-target")) return;
 
   const rect = aimArena.getBoundingClientRect();
 
   if (demoLocked) {
     const nearest = nearestDemoTarget();
-
-    if (nearest) {
-      moveDemoCrosshair(nearest.x, nearest.y);
-    }
+    if (nearest) moveDemoCrosshair(nearest.x, nearest.y);
   } else {
     moveDemoCrosshair(
       ((event.clientX - rect.left) / rect.width) * 100,
@@ -347,15 +328,16 @@ getDemoTargets().forEach(target => {
   target.addEventListener("click", event => {
     event.stopPropagation();
 
-    const x = parseFloat(target.style.left);
-    const y = parseFloat(target.style.top);
-
-    moveDemoCrosshair(x, y);
+    moveDemoCrosshair(
+      parseFloat(target.style.left),
+      parseFloat(target.style.top)
+    );
 
     demoSelections++;
-
     target.classList.add("selected");
 
-    demoScore.textContent = `Targets selected: ${demoSelections}`;
+    if (demoScore) {
+      demoScore.textContent = `Targets selected: ${demoSelections}`;
+    }
   });
 });
